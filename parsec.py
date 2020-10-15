@@ -55,7 +55,7 @@ class PrologParser(TextParsers, whitespace=r'[ \t\n\r]*'):
     bracket_type_body = ((left_br & type_seq & right_br) > (lambda x: ''.join(x[1])))
     type_seq =  (((bracket_type_body | atom | var) & arrow & ((rep1sep(bracket_type_body | atom | var , arrow) > (lambda x: '\n'.join(x)))) > (lambda x: 'typeseq\n' + add_tab(x[0] + '\n' + x[2]))) 
             | ((atom | var | bracket_type_body>(lambda x: ''.join(x)))))
-    typedef = (keyword_type & ident & type_seq & dot) > (lambda x: 'typedef\n' + add_tab(x[1] + '\n' + x[2]))
+    typedef = (keyword_type & ident & type_seq & dot) > (lambda x: 'typedef\n' + add_tab('typename\n' + add_tab(x[1]) + '\n' + x[2]))
 
     program = ((module) & (rep(typedef) > print_newline) & (rep(relation) > print_newline)) > print_newline
 
