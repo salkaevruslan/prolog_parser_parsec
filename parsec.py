@@ -30,15 +30,18 @@ class PrologParser(TextParsers, whitespace=r'[ \t\n\r]*'):
     conj_sep = lit(',') > print_nothing
     left_br = lit('(') > print_nothing
     right_br = lit(')') > print_nothing
+    left_brsq = lit('[') > print_nothing
+    right_brsq = lit(']') > print_nothing
+    vert = lit('|') > print_nothing
 
     var = reg(r'[A-Z][a-zA-Z_0-9]*') > (lambda x: 'variable = ' + x)
     ident = pred(reg(r'[a-z_][a-zA-Z_0-9]*'), lambda x: x != 'module' and x != 'type',
                  'identifier which is not a keyword') > (lambda x: 'identifier = ' + x)
 
     atom = (atom_body > print_atom) | (ident > (lambda x: ''.join(x)))
-    atom_body = (ident & (rep1(bracket_atom | ident | var) > print_newline))
+    atom_body = (ident & (rep1(bracket_atom | ident | var | List) > print_newline))
     bracket_atom = (((left_br & bracket_atom & right_br) > (lambda x: ''.join(x[1]))) 
-            | ( var | atom> (lambda x: ''.join(x))))
+            | ( var | atom | List > (lambda x: ''.join(x))))
 
     element = ((left_br & disj & right_br) | atom > (lambda x: ''.join(x)))
     conj = (((element & conj_sep & conj) > (lambda x: 'conjunction\n' + add_tab(x[0]) + '\n' + add_tab(x[2])))
@@ -57,6 +60,10 @@ class PrologParser(TextParsers, whitespace=r'[ \t\n\r]*'):
             | ((atom | var | bracket_type_body>(lambda x: ''.join(x)))))
     typedef = (keyword_type & ident & type_seq & dot) > (lambda x: 'typedef\n' + add_tab('typename\n' + add_tab(x[1]) + '\n' + x[2]))
 
+    list_head_tail = (left_brsq & (List | var | atom) & vert & var & right_brsq) > (lambda x: 'head\n' + add_tab(x[1]) + '\ntail\n' + add_tab(x[3]))
+    list_seq = (left_brsq >> repsep(atom | var | List, conj_sep) << right_brsq) > (lambda x: '\n'.join(x) if x!=[] else 'empty')
+    List = (list_head_tail | list_seq) > (lambda x: 'list\n' + add_tab(x))
+
     program = ((module) & (rep(typedef) > print_newline) & (rep(relation) > print_newline)) > print_newline
 
 
@@ -72,6 +79,8 @@ def getResult(arg, str):
         return PrologParser.module.parse(str)
     if arg == '--relation':
         return PrologParser.relation.parse(str)
+    if arg == '--list':
+        return PrologParser.List.parse(str)
     if arg == '--prog':
         return PrologParser.program.parse(str)
 

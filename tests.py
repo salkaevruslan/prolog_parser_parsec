@@ -41,6 +41,9 @@ def test_atom():
     assert type(parse('a (b C) (((d ((E))))) f')) == Success
     assert type(parse('a (b (c))')) == Success
     assert type(parse('a ((A)) b')) == Success
+    assert type(parse('g (([[X, [H, T, Q, R]] | Z])) [] [A] [B]')) == Success
+    assert type(parse('a [X] V')) == Success
+    assert type(parse('a [a, b, c, []] Y x')) == Success
 
     assert type(parse('type b')) == Failure
     assert type(parse('a (b c d')) == Failure
@@ -55,6 +58,9 @@ def test_atom():
     assert type(parse('a (B c)')) == Failure
     assert type(parse('(a)')) == Failure
     assert type(parse('(a) b c')) == Failure
+    assert type(parse('A [X] B')) == Failure
+    assert type(parse('[X] B')) == Failure
+    assert type(parse('[] a')) == Failure
 
 
 def test_module():
@@ -80,6 +86,7 @@ def test_type():
     assert type(parse('type filter t.')) == Success
     assert type(parse('type filter (A -> o) -> list A -> list A -> o.')) == Success
     assert type(parse('type filter string -> list A.')) == Success
+    assert type(parse('type filter string -> list [a, b, c].')) == Success
     assert type(parse('type filter (A -> (B -> C -> (A -> list A) -> C)) -> o.')) == Success
     assert type(parse('type filter ((A -> (B -> C -> (A -> list A) -> C))) -> o.')) == Success
     assert type(parse('type filter (A -> (B -> C -> (A -> (list A)) -> C)) -> o.')) == Success
@@ -117,6 +124,28 @@ def test_rel():
     assert type(parse('(a) b.')) == Failure
 
 
+def test_list():
+    parse = PrologParser.List.parse
+    assert type(parse('[]')) == Success
+    assert type(parse('[[]]')) == Success
+    assert type(parse('[[], [[]]]')) == Success
+    assert type(parse('[X, Y, Z, a (b c)]')) == Success
+    assert type(parse('[a (b c), d, Z]')) == Success
+    assert type(parse('[H | T]')) == Success
+    assert type(parse('[a (b c) | T]')) == Success
+    assert type(parse('[[X, [H | T]] | Z]')) == Success
+    assert type(parse('[a, b, D, [x, [y| Z]]]')) == Success
+    assert type(parse('[[[]]]')) == Success
+
+    assert type(parse('[')) == Failure
+    assert type(parse(']a')) == Failure
+    assert type(parse('b')) == Failure
+    assert type(parse('c[')) == Failure
+    assert type(parse('[H | abc]')) == Failure
+    assert type(parse('[H | A b c]')) == Failure
+    assert type(parse('[]]')) == Failure
+
+
 def test_prog():
     parse = PrologParser.program.parse
     assert type(parse('module test.')) == Success
@@ -128,6 +157,7 @@ def test_prog():
     assert type(parse('type t f -> o. f :- name. a (b c) :- x, y, z.')) == Success
     assert type(parse('f :- name. a (b c) :- x, y, z.')) == Success
     assert type(parse('a (b c) :- x, y, z.')) == Success
+    assert type(parse('f [a, [A , [B, C, D]], a (b c)] x y [z, []] :- t [a c, b].')) == Success
     assert type(parse('f.')) == Success
 
 
@@ -145,6 +175,7 @@ if __name__ == '__main__':
 	test_module()
 	test_ident()
 	test_variable()
+	test_list()
 	test_atom()
 	test_type()
 	test_rel()
